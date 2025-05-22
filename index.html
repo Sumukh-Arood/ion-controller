@@ -215,6 +215,7 @@ const dirCanvas = document.getElementById('dirJoystick');
 const dirCtx = dirCanvas.getContext('2d');
 const dirCenter = { x: 75, y: 75, radius: 60 };
 let dirStick = { x: 75, y: 75 };
+let dirTouchId = null; // Track active touch id for dirJoystick
 
 function drawDirJoystick() {
   dirCtx.clearRect(0, 0, 150, 150);
@@ -254,23 +255,43 @@ dirCanvas.addEventListener('mousedown', e => {
 
 dirCanvas.addEventListener('touchstart', e => {
   e.preventDefault();
+  if (dirTouchId !== null) return; // already tracking a touch
+  const touch = e.changedTouches[0];
+  dirTouchId = touch.identifier;
+  handleDirInput(touch.clientX, touch.clientY);
+
   function move(ev) {
-    const t = ev.touches[0];
-    handleDirInput(t.clientX, t.clientY);
+    for (let t of ev.changedTouches) {
+      if (t.identifier === dirTouchId) {
+        handleDirInput(t.clientX, t.clientY);
+        break;
+      }
+    }
   }
-  document.addEventListener('touchmove', move);
-  document.addEventListener('touchend', () => {
-    Vx = Vy = 0;
-    dirStick = { x: dirCenter.x, y: dirCenter.y };
-    drawDirJoystick(); compute();
-    document.removeEventListener('touchmove', move);
-  }, { once: true });
+  function end(ev) {
+    for (let t of ev.changedTouches) {
+      if (t.identifier === dirTouchId) {
+        Vx = Vy = 0;
+        dirStick = { x: dirCenter.x, y: dirCenter.y };
+        drawDirJoystick(); compute();
+        dirTouchId = null;
+        document.removeEventListener('touchmove', move);
+        document.removeEventListener('touchend', end);
+        document.removeEventListener('touchcancel', end);
+        break;
+      }
+    }
+  }
+  document.addEventListener('touchmove', move, { passive: false });
+  document.addEventListener('touchend', end, { passive: false });
+  document.addEventListener('touchcancel', end, { passive: false });
 }, { passive: false });
 
 // --- Rotation Joystick ---
 const rotCanvas = document.getElementById('rotJoystick');
 const rotCtx = rotCanvas.getContext('2d');
 let rotX = 75;
+let rotTouchId = null; // Track active touch id for rotJoystick
 
 function drawRotJoystick() {
   rotCtx.clearRect(0, 0, 150, 50);
@@ -302,17 +323,36 @@ rotCanvas.addEventListener('mousedown', e => {
 
 rotCanvas.addEventListener('touchstart', e => {
   e.preventDefault();
+  if (rotTouchId !== null) return; // already tracking a touch
+  const touch = e.changedTouches[0];
+  rotTouchId = touch.identifier;
+  handleRotInput(touch.clientX);
+
   function move(ev) {
-    const t = ev.touches[0];
-    handleRotInput(t.clientX);
+    for (let t of ev.changedTouches) {
+      if (t.identifier === rotTouchId) {
+        handleRotInput(t.clientX);
+        break;
+      }
+    }
   }
-  document.addEventListener('touchmove', move);
-  document.addEventListener('touchend', () => {
-    Vz = 0;
-    rotX = 75;
-    drawRotJoystick(); compute();
-    document.removeEventListener('touchmove', move);
-  }, { once: true });
+  function end(ev) {
+    for (let t of ev.changedTouches) {
+      if (t.identifier === rotTouchId) {
+        Vz = 0;
+        rotX = 75;
+        drawRotJoystick(); compute();
+        rotTouchId = null;
+        document.removeEventListener('touchmove', move);
+        document.removeEventListener('touchend', end);
+        document.removeEventListener('touchcancel', end);
+        break;
+      }
+    }
+  }
+  document.addEventListener('touchmove', move, { passive: false });
+  document.addEventListener('touchend', end, { passive: false });
+  document.addEventListener('touchcancel', end, { passive: false });
 }, { passive: false });
 
 // --- Sliders ---
@@ -342,10 +382,10 @@ function compute() {
   W2 = Math.max(-500, Math.min(500, W2));
   W3 = Math.max(-500, Math.min(500, W3));
 
-  document.getElementById('vxvyDisplay').innerHTML = `Vx: ${Vx.toFixed(2)}<br>Vy: ${Vy.toFixed(2)}`;
-  document.getElementById('VzDisplay').innerHTML = `Vz: ${Vz.toFixed(2)}`;
+  document.getElementById('vxvyDisplay').innerHTML = \`Vx: \${Vx.toFixed(2)}<br>Vy: \${Vy.toFixed(2)}\`;
+  document.getElementById('VzDisplay').innerHTML = \`Vz: \${Vz.toFixed(2)}\`;
   document.getElementById('wheelOutput').innerHTML =
-    `W1: ${W1.toFixed(2)}<br>W2: ${W2.toFixed(2)}<br>W3: ${W3.toFixed(2)}`;
+    \`W1: \${W1.toFixed(2)}<br>W2: \${W2.toFixed(2)}<br>W3: \${W3.toFixed(2)}\`;
 }
 </script>
 
@@ -374,7 +414,7 @@ function drawGrid(offsetX, offsetY) {
   }
 }
 
-// Replacement rounded rectangle function
+// Rounded rectangle helper for wheels
 function roundedRect(ctx, x, y, width, height, radius) {
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
@@ -389,7 +429,6 @@ function roundedRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
-// Draw a wheel with rounded rectangle
 function drawWheel(x, y, angleRad) {
   ctx.save();
   ctx.translate(x, y);
@@ -422,7 +461,7 @@ function drawHexagon(cx, cy, radius, angleRad) {
   ctx.fill();
 
   // Wheels
-  const rOffset = radius + 2;
+  const rOffset = radius + 6;
   drawWheel(0, -rOffset, 0); // Top wheel (0°)
   drawWheel(rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), -Math.PI / 3); // Left wheel
   drawWheel(-rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), Math.PI / 3); // Right wheel
