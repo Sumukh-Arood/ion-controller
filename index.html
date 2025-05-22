@@ -41,25 +41,28 @@
       overflow-x: hidden;
     }
 
-    .controller {
-      display: flex;
-      justify-content: center;
-      flex-wrap: nowrap;
-      gap: 15px;
-      padding: 30px 10px 0;
-      max-width: 1000px;
-      flex: 1;
-    }
+.controller {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding: 20px;
+  gap: 15px;
+  width: 100%;
+}
 
-    .joystick-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex: 1 1 0;
-      min-width: 160px;
-      max-width: 33.333%;
-      box-sizing: border-box;
-    }
+
+.joystick-container {
+  flex: 0 0 280px;  /* Fixed width that doesn’t shrink */
+  min-width: 260px;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 
     .joystick-container label {
       font-weight: 600;
@@ -70,11 +73,12 @@
 
     canvas {
       background: white;
-      border: 2px solid #333;
+      border: 2px solid var(--text-color);
       border-radius: 12px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       max-width: 100%;
       height: auto;
+      touch-action: none; /* Required for multitouch */
     }
 
     .joystick-output, .wheel-output {
@@ -162,17 +166,21 @@
 
   <div class="controller-wrapper">
     <div class="controller" role="region" aria-label="Controller">
+      
+      <!-- Direction Joystick -->
       <div class="joystick-container">
         <label for="dirJoystick">Direction Control</label>
         <canvas id="dirJoystick" width="150" height="150" aria-label="Direction Joystick"></canvas>
         <div class="joystick-output" id="vxvyDisplay">Vx: 0.00<br>Vy: 0.00</div>
       </div>
 
+      <!-- Navigation Map -->
       <div class="joystick-container">
         <label for="robotCanvas">Navigation Map</label>
         <canvas id="robotCanvas" width="200" height="200" aria-label="Navigation Map"></canvas>
       </div>
 
+      <!-- Rotation Joystick -->
       <div class="joystick-container">
         <label for="rotJoystick">Rotation Control</label>
         <canvas id="rotJoystick" width="150" height="50" aria-label="Rotation Joystick"></canvas>
@@ -182,6 +190,7 @@
     </div>
   </div>
 
+  <!-- Sliders -->
   <div class="slider-section">
     <div class="slider-container">
       <h3>Tuning</h3>
@@ -202,268 +211,309 @@
       </div>
     </div>
   </div>
-
 <script>
-let Vx = 0, Vy = 0, Vz = 0;
-let maxSpeed = 550;
-let ROTATION_GAIN = 0.3;
-let R = 9.0;
-let W1 = 0, W2 = 0, W3 = 0;
+  let Vx = 0, Vy = 0, Vz = 0;
+  let maxSpeed = 550;
+  let ROTATION_GAIN = 0.3;
+  let R = 9.0;
+  let W1 = 0, W2 = 0, W3 = 0;
 
-// --- Direction Joystick ---
-const dirCanvas = document.getElementById('dirJoystick');
-const dirCtx = dirCanvas.getContext('2d');
-const dirCenter = { x: 75, y: 75, radius: 60 };
-let dirStick = { x: 75, y: 75 };
+  // Direction Joystick
+  const dirCanvas = document.getElementById('dirJoystick');
+  const dirCtx = dirCanvas.getContext('2d');
+  const dirCenter = { x: 75, y: 75, radius: 60 };
+  let dirStick = { x: 75, y: 75 };
+  let dirTouchId = null;
 
-function drawDirJoystick() {
-  dirCtx.clearRect(0, 0, 150, 150);
-  dirCtx.beginPath();
-  dirCtx.arc(dirCenter.x, dirCenter.y, dirCenter.radius, 0, Math.PI * 2);
-  dirCtx.stroke();
-  dirCtx.beginPath();
-  dirCtx.arc(dirStick.x, dirStick.y, 10, 0, Math.PI * 2);
-  dirCtx.fillStyle = 'red';
-  dirCtx.fill();
-}
-
-function handleDirInput(x, y) {
-  const rect = dirCanvas.getBoundingClientRect();
-  let dx = x - rect.left - dirCenter.x;
-  let dy = y - rect.top - dirCenter.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  const limit = dist > dirCenter.radius ? dirCenter.radius / dist : 1;
-  dirStick.x = dirCenter.x + dx * limit;
-  dirStick.y = dirCenter.y + dy * limit;
-  Vx = -dy * limit / dirCenter.radius;
-  Vy = dx * limit / dirCenter.radius;
-  drawDirJoystick();
-  compute();
-}
-
-dirCanvas.addEventListener('mousedown', e => {
-  function move(ev) { handleDirInput(ev.clientX, ev.clientY); }
-  document.addEventListener('mousemove', move);
-  document.addEventListener('mouseup', () => {
-    Vx = Vy = 0;
-    dirStick = { x: dirCenter.x, y: dirCenter.y };
-    drawDirJoystick(); compute();
-    document.removeEventListener('mousemove', move);
-  }, { once: true });
-});
-
-dirCanvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  function move(ev) {
-    const t = ev.touches[0];
-    handleDirInput(t.clientX, t.clientY);
+  function drawDirJoystick() {
+    dirCtx.clearRect(0, 0, dirCanvas.width, dirCanvas.height);
+    dirCtx.beginPath();
+    dirCtx.arc(dirCenter.x, dirCenter.y, dirCenter.radius, 0, Math.PI * 2);
+    dirCtx.stroke();
+    dirCtx.beginPath();
+    dirCtx.arc(dirStick.x, dirStick.y, 10, 0, Math.PI * 2);
+    dirCtx.fillStyle = 'red';
+    dirCtx.fill();
   }
-  document.addEventListener('touchmove', move);
-  document.addEventListener('touchend', () => {
-    Vx = Vy = 0;
-    dirStick = { x: dirCenter.x, y: dirCenter.y };
-    drawDirJoystick(); compute();
-    document.removeEventListener('touchmove', move);
-  }, { once: true });
-}, { passive: false });
 
-// --- Rotation Joystick ---
-const rotCanvas = document.getElementById('rotJoystick');
-const rotCtx = rotCanvas.getContext('2d');
-let rotX = 75;
-
-function drawRotJoystick() {
-  rotCtx.clearRect(0, 0, 150, 50);
-  rotCtx.strokeRect(5, 5, 140, 40);
-  rotCtx.beginPath();
-  rotCtx.arc(rotX, 25, 8, 0, Math.PI * 2);
-  rotCtx.fillStyle = 'red';
-  rotCtx.fill();
-}
-
-function handleRotInput(x) {
-  const rect = rotCanvas.getBoundingClientRect();
-  let dx = x - rect.left;
-  rotX = Math.max(15, Math.min(dx, 135));
-  Vz = (rotX - 75) / 60;
-  drawRotJoystick(); compute();
-}
-
-rotCanvas.addEventListener('mousedown', e => {
-  function move(ev) { handleRotInput(ev.clientX); }
-  document.addEventListener('mousemove', move);
-  document.addEventListener('mouseup', () => {
-    Vz = 0;
-    rotX = 75;
-    drawRotJoystick(); compute();
-    document.removeEventListener('mousemove', move);
-  }, { once: true });
-});
-
-rotCanvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  function move(ev) {
-    const t = ev.touches[0];
-    handleRotInput(t.clientX);
+  function handleDirInput(x, y) {
+    const rect = dirCanvas.getBoundingClientRect();
+    let dx = x - rect.left - dirCenter.x;
+    let dy = y - rect.top - dirCenter.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const limit = dist > dirCenter.radius ? dirCenter.radius / dist : 1;
+    dirStick.x = dirCenter.x + dx * limit;
+    dirStick.y = dirCenter.y + dy * limit;
+    Vx = -dy * limit / dirCenter.radius;
+    Vy = dx * limit / dirCenter.radius;
+    drawDirJoystick();
+    compute();
   }
-  document.addEventListener('touchmove', move);
-  document.addEventListener('touchend', () => {
-    Vz = 0;
-    rotX = 75;
-    drawRotJoystick(); compute();
-    document.removeEventListener('touchmove', move);
-  }, { once: true });
-}, { passive: false });
 
-// --- Sliders ---
-document.getElementById('speed').addEventListener('input', e => {
-  maxSpeed = parseInt(e.target.value);
-  document.getElementById('speedVal').textContent = maxSpeed;
-  compute();
-});
-document.getElementById('rotationGain').addEventListener('input', e => {
-  ROTATION_GAIN = parseFloat(e.target.value);
-  document.getElementById('rotationVal').textContent = ROTATION_GAIN.toFixed(2);
-  compute();
-});
-document.getElementById('radius').addEventListener('input', e => {
-  R = parseFloat(e.target.value);
-  document.getElementById('radiusVal').textContent = R.toFixed(1);
-  compute();
-});
+  dirCanvas.addEventListener('mousedown', e => {
+    function move(ev) { handleDirInput(ev.clientX, ev.clientY); }
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', () => {
+      Vx = Vy = 0;
+      dirStick = { x: dirCenter.x, y: dirCenter.y };
+      drawDirJoystick(); compute();
+      document.removeEventListener('mousemove', move);
+    }, { once: true });
+  });
 
-// --- Telemetry ---
-function compute() {
-  W1 = (-Vx + ROTATION_GAIN * R * Vz) * maxSpeed;
-  W2 = (0.5 * Vx + 0.866 * Vy + ROTATION_GAIN * R * Vz) * maxSpeed;
-  W3 = (0.5 * Vx - 0.866 * Vy + ROTATION_GAIN * R * Vz) * maxSpeed;
+  dirCanvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (dirTouchId !== null) return;
+    const touch = e.changedTouches[0];
+    dirTouchId = touch.identifier;
+    handleDirInput(touch.clientX, touch.clientY);
 
-  W1 = Math.max(-500, Math.min(500, W1));
-  W2 = Math.max(-500, Math.min(500, W2));
-  W3 = Math.max(-500, Math.min(500, W3));
+    function move(ev) {
+      for (const t of ev.changedTouches) {
+        if (t.identifier === dirTouchId) {
+          handleDirInput(t.clientX, t.clientY);
+          break;
+        }
+      }
+    }
 
-  document.getElementById('vxvyDisplay').innerHTML = `Vx: ${Vx.toFixed(2)}<br>Vy: ${Vy.toFixed(2)}`;
-  document.getElementById('VzDisplay').innerHTML = `Vz: ${Vz.toFixed(2)}`;
-  document.getElementById('wheelOutput').innerHTML =
-    `W1: ${W1.toFixed(2)}<br>W2: ${W2.toFixed(2)}<br>W3: ${W3.toFixed(2)}`;
-}
+    function end(ev) {
+      for (const t of ev.changedTouches) {
+        if (t.identifier === dirTouchId) {
+          Vx = Vy = 0;
+          dirStick = { x: dirCenter.x, y: dirCenter.y };
+          drawDirJoystick(); compute();
+          dirTouchId = null;
+          document.removeEventListener('touchmove', move);
+          document.removeEventListener('touchend', end);
+          document.removeEventListener('touchcancel', end);
+          break;
+        }
+      }
+    }
+
+    document.addEventListener('touchmove', move, { passive: false });
+    document.addEventListener('touchend', end, { passive: false });
+    document.addEventListener('touchcancel', end, { passive: false });
+  }, { passive: false });
+  // Rotation Joystick
+  const rotCanvas = document.getElementById('rotJoystick');
+  const rotCtx = rotCanvas.getContext('2d');
+  let rotX = 75;
+  let rotTouchId = null;
+
+  function drawRotJoystick() {
+    rotCtx.clearRect(0, 0, rotCanvas.width, rotCanvas.height);
+    rotCtx.strokeRect(5, 5, 140, 40);
+    rotCtx.beginPath();
+    rotCtx.arc(rotX, 25, 8, 0, Math.PI * 2);
+    rotCtx.fillStyle = 'red';
+    rotCtx.fill();
+  }
+
+  function handleRotInput(x) {
+    const rect = rotCanvas.getBoundingClientRect();
+    let dx = x - rect.left;
+    rotX = Math.max(15, Math.min(dx, 135));
+    Vz = (rotX - 75) / 60;
+    drawRotJoystick();
+    compute();
+  }
+
+  rotCanvas.addEventListener('mousedown', e => {
+    function move(ev) { handleRotInput(ev.clientX); }
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', () => {
+      Vz = 0;
+      rotX = 75;
+      drawRotJoystick();
+      compute();
+      document.removeEventListener('mousemove', move);
+    }, { once: true });
+  });
+
+  rotCanvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (rotTouchId !== null) return;
+    const touch = e.changedTouches[0];
+    rotTouchId = touch.identifier;
+    handleRotInput(touch.clientX);
+
+    function move(ev) {
+      for (const t of ev.changedTouches) {
+        if (t.identifier === rotTouchId) {
+          handleRotInput(t.clientX);
+          break;
+        }
+      }
+    }
+
+    function end(ev) {
+      for (const t of ev.changedTouches) {
+        if (t.identifier === rotTouchId) {
+          Vz = 0;
+          rotX = 75;
+          drawRotJoystick();
+          compute();
+          rotTouchId = null;
+          document.removeEventListener('touchmove', move);
+          document.removeEventListener('touchend', end);
+          document.removeEventListener('touchcancel', end);
+          break;
+        }
+      }
+    }
+
+    document.addEventListener('touchmove', move, { passive: false });
+    document.addEventListener('touchend', end, { passive: false });
+    document.addEventListener('touchcancel', end, { passive: false });
+  }, { passive: false });
+
+  // Sliders
+  document.getElementById('speed').addEventListener('input', e => {
+    maxSpeed = parseInt(e.target.value);
+    document.getElementById('speedVal').textContent = maxSpeed;
+    compute();
+  });
+  document.getElementById('rotationGain').addEventListener('input', e => {
+    ROTATION_GAIN = parseFloat(e.target.value);
+    document.getElementById('rotationVal').textContent = ROTATION_GAIN.toFixed(2);
+    compute();
+  });
+  document.getElementById('radius').addEventListener('input', e => {
+    R = parseFloat(e.target.value);
+    document.getElementById('radiusVal').textContent = R.toFixed(1);
+    compute();
+  });
+
+  // Compute Wheel Speeds
+  function compute() {
+    W1 = (-Vx + ROTATION_GAIN * R * Vz) * maxSpeed;
+    W2 = (0.5 * Vx + 0.866 * Vy + ROTATION_GAIN * R * Vz) * maxSpeed;
+    W3 = (0.5 * Vx - 0.866 * Vy + ROTATION_GAIN * R * Vz) * maxSpeed;
+
+    W1 = Math.max(-500, Math.min(500, W1));
+    W2 = Math.max(-500, Math.min(500, W2));
+    W3 = Math.max(-500, Math.min(500, W3));
+
+    document.getElementById('vxvyDisplay').innerHTML = `Vx: ${Vx.toFixed(2)}<br>Vy: ${Vy.toFixed(2)}`;
+    document.getElementById('VzDisplay').innerHTML = `Vz: ${Vz.toFixed(2)}`;
+    document.getElementById('wheelOutput').innerHTML =
+      `W1: ${W1.toFixed(2)}<br>W2: ${W2.toFixed(2)}<br>W3: ${W3.toFixed(2)}`;
+  }
 </script>
-
 <script>
-// --- Robot Drawing ---
-const robotCanvas = document.getElementById('robotCanvas');
-const ctx = robotCanvas.getContext('2d');
-let pos = { x: 0, y: 0 };
-let angle = 0;
+  // Robot Animation
+  const robotCanvas = document.getElementById('robotCanvas');
+  const ctx = robotCanvas.getContext('2d');
+  let pos = { x: 0, y: 0 };
+  let angle = 0;
 
-function drawGrid(offsetX, offsetY) {
-  const spacing = 20;
-  ctx.strokeStyle = "#ccc";
-  ctx.lineWidth = 1;
-  for (let x = -spacing; x < 200 + spacing; x += spacing) {
+  function drawGrid(offsetX, offsetY) {
+    const spacing = 20;
+    ctx.strokeStyle = "#ccc";
+    ctx.lineWidth = 1;
+    for (let x = -spacing; x < robotCanvas.width + spacing; x += spacing) {
+      ctx.beginPath();
+      ctx.moveTo(x + offsetX % spacing, 0);
+      ctx.lineTo(x + offsetX % spacing, robotCanvas.height);
+      ctx.stroke();
+    }
+    for (let y = -spacing; y < robotCanvas.height + spacing; y += spacing) {
+      ctx.beginPath();
+      ctx.moveTo(0, y + offsetY % spacing);
+      ctx.lineTo(robotCanvas.width, y + offsetY % spacing);
+      ctx.stroke();
+    }
+  }
+
+  function drawWheel(x, y, angleRad) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angleRad);
+    ctx.fillStyle = "#000";
     ctx.beginPath();
-    ctx.moveTo(x + offsetX % spacing, 0);
-    ctx.lineTo(x + offsetX % spacing, 200);
-    ctx.stroke();
+    ctx.roundRect(-10, -3, 20, 6, 3);
+    ctx.fill();
+    ctx.restore();
   }
-  for (let y = -spacing; y < 200 + spacing; y += spacing) {
+
+  function drawHexagon(cx, cy, radius, angleRad) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angleRad);
+
     ctx.beginPath();
-    ctx.moveTo(0, y + offsetY % spacing);
-    ctx.lineTo(200, y + offsetY % spacing);
+    for (let i = 0; i < 6; i++) {
+      const theta = i * Math.PI / 3;
+      const x = radius * Math.cos(theta);
+      const y = radius * Math.sin(theta);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.fillStyle = "#eee";
+    ctx.fill();
+
+    const rOffset = radius + 6;
+    drawWheel(0, -rOffset, 0);
+    drawWheel(rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), -Math.PI / 3);
+    drawWheel(-rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), Math.PI / 3);
+
+    ctx.save();
+    ctx.rotate(Math.PI / 2);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(radius, -8);
+    ctx.lineTo(radius, 8);
+    ctx.closePath();
+    ctx.fillStyle = "red";
+    ctx.fill();
+    ctx.restore();
+
+    ctx.restore();
   }
-}
 
-// Replacement rounded rectangle function
-function roundedRect(ctx, x, y, width, height, radius) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-}
+  function updateAnimation() {
+    const dx = Vy * Math.cos(-angle) - Vx * Math.sin(-angle);
+    const dy = Vy * Math.sin(-angle) + Vx * Math.cos(-angle);
 
-// Draw a wheel with rounded rectangle
-function drawWheel(x, y, angleRad) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angleRad);
-  ctx.fillStyle = "#000";
-  roundedRect(ctx, -10, -3, 20, 6, 3);
-  ctx.fill();
-  ctx.restore();
-}
+    pos.x += dx * 2;
+    pos.y -= dy * 2;
+    angle += Vz * 0.05;
 
-function drawHexagon(cx, cy, radius, angleRad) {
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.rotate(angleRad);
+    ctx.clearRect(0, 0, robotCanvas.width, robotCanvas.height);
+    drawGrid(-pos.x + robotCanvas.width / 2, -pos.y + robotCanvas.height / 2);
+    drawHexagon(robotCanvas.width / 2, robotCanvas.height / 2, 30, angle);
 
-  // Hex body
-  ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    const theta = i * Math.PI / 3;
-    const x = radius * Math.cos(theta);
-    const y = radius * Math.sin(theta);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+    requestAnimationFrame(updateAnimation);
   }
-  ctx.closePath();
-  ctx.strokeStyle = "#333";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.fillStyle = "#eee";
-  ctx.fill();
 
-  // Wheels
-  const rOffset = radius + 6;
-  drawWheel(0, -rOffset, 0); // Top wheel (0°)
-  drawWheel(rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), -Math.PI / 3); // Left wheel
-  drawWheel(-rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), Math.PI / 3); // Right wheel
+  function updateCanvasSizes() {
+    [dirCanvas, rotCanvas, robotCanvas].forEach(canvas => {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    });
+  }
 
-  // Front red direction arrow
-  ctx.save();
-  ctx.rotate(Math.PI / 2);
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(radius, -8);
-  ctx.lineTo(radius, 8);
-  ctx.closePath();
-  ctx.fillStyle = "red";
-  ctx.fill();
-  ctx.restore();
+  window.addEventListener('resize', () => {
+    updateCanvasSizes();
+    drawDirJoystick();
+    drawRotJoystick();
+  });
 
-  ctx.restore();
-}
-
-function updateAnimation() {
-  const dx = Vy * Math.cos(-angle) - Vx * Math.sin(-angle);
-  const dy = Vy * Math.sin(-angle) + Vx * Math.cos(-angle);
-
-  pos.x += dx * 2;
-  pos.y -= dy * 2;
-  angle += Vz * 0.05;
-
-  ctx.clearRect(0, 0, 200, 200);
-  drawGrid(-pos.x + 100, -pos.y + 100);
-  drawHexagon(100, 100, 30, angle);
-  requestAnimationFrame(updateAnimation);
-}
-
-// Initialize at load
-drawDirJoystick();
-drawRotJoystick();
-compute();
-updateAnimation();
-
+  window.addEventListener('load', () => {
+    updateCanvasSizes();
+    drawDirJoystick();
+    drawRotJoystick();
+    compute();
+    updateAnimation();
+  });
 </script>
 
 </body>
 </html>
-
