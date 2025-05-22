@@ -170,35 +170,53 @@ function drawDirJoystick() {
   dirCtx.fill();
 }
 
+function handleDirInput(clientX, clientY) {
+  const rect = dirCanvas.getBoundingClientRect();
+  const x = clientX - rect.left;
+  const y = clientY - rect.top;
+  let dx = x - dirCenter.x;
+  let dy = y - dirCenter.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist > dirCenter.radius) {
+    dx *= dirCenter.radius / dist;
+    dy *= dirCenter.radius / dist;
+  }
+  dirStick.x = dirCenter.x + dx;
+  dirStick.y = dirCenter.y + dy;
+  Vx = -dy / dirCenter.radius;
+  Vy = dx / dirCenter.radius;
+  drawDirJoystick();
+  compute();
+}
+
 dirCanvas.addEventListener('mousedown', () => {
-  function move(evt) {
-    const rect = dirCanvas.getBoundingClientRect();
-    const x = evt.clientX - rect.left;
-    const y = evt.clientY - rect.top;
-    let dx = x - dirCenter.x;
-    let dy = y - dirCenter.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > dirCenter.radius) {
-      dx *= dirCenter.radius / dist;
-      dy *= dirCenter.radius / dist;
-    }
-    dirStick.x = dirCenter.x + dx;
-    dirStick.y = dirCenter.y + dy;
-    Vx = -dy / dirCenter.radius;
-    Vy = dx / dirCenter.radius;
-    drawDirJoystick();
-    compute();
+  function move(e) {
+    handleDirInput(e.clientX, e.clientY);
   }
   document.addEventListener('mousemove', move);
   document.addEventListener('mouseup', () => {
-    dirStick.x = dirCenter.x;
-    dirStick.y = dirCenter.y;
+    dirStick = { x: dirCenter.x, y: dirCenter.y };
     Vx = 0; Vy = 0;
-    drawDirJoystick();
-    compute();
+    drawDirJoystick(); compute();
     document.removeEventListener('mousemove', move);
   }, { once: true });
 });
+
+dirCanvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  function move(ev) {
+    const t = ev.touches[0];
+    handleDirInput(t.clientX, t.clientY);
+  }
+  document.addEventListener('touchmove', move);
+  document.addEventListener('touchend', () => {
+    dirStick = { x: dirCenter.x, y: dirCenter.y };
+    Vx = 0; Vy = 0;
+    drawDirJoystick(); compute();
+    document.removeEventListener('touchmove', move);
+  }, { once: true });
+}, { passive: false });
 
 // Rotation Joystick
 const rotCanvas = document.getElementById('rotJoystick');
