@@ -387,20 +387,38 @@
   });
 
   // Compute Wheel Speeds
-  function compute() {
-    W1 = (-Vx + ROTATION_GAIN * R * Vz) * maxSpeed;
-    W2 = (0.5 * Vx + 0.866 * Vy + ROTATION_GAIN * R * Vz) * maxSpeed;
-    W3 = (0.5 * Vx - 0.866 * Vy + ROTATION_GAIN * R * Vz) * maxSpeed;
+function compute() {
+  const termR = ROTATION_GAIN * R * Vz;
 
-    W1 = Math.max(-500, Math.min(500, W1));
-    W2 = Math.max(-500, Math.min(500, W2));
-    W3 = Math.max(-500, Math.min(500, W3));
+  if (Math.abs(Vx) < 0.01) Vx = 0;
+  if (Math.abs(Vy) < 0.01) Vy = 0;
+  if (Math.abs(Vz) < 0.01) Vz = 0;
 
-    document.getElementById('vxvyDisplay').innerHTML = `Vx: ${Vx.toFixed(2)}<br>Vy: ${Vy.toFixed(2)}`;
-    document.getElementById('VzDisplay').innerHTML = `Vz: ${Vz.toFixed(2)}`;
-    document.getElementById('wheelOutput').innerHTML =
-      `W1: ${W1.toFixed(2)}<br>W2: ${W2.toFixed(2)}<br>W3: ${W3.toFixed(2)}`;
-  }
+
+  // Correct inverse kinematics
+  W1 = (Vy + termR) * maxSpeed;
+  W2 = (-0.866 * Vx - 0.5 * Vy + termR) * maxSpeed;
+  W3 = ( 0.866 * Vx - 0.5 * Vy + termR) * maxSpeed;
+
+  // Clamp to safe range
+  W1 = Math.max(-500, Math.min(500, W1));
+  W2 = Math.max(-500, Math.min(500, W2));
+  W3 = Math.max(-500, Math.min(500, W3));
+
+  // Update UI
+  document.getElementById('vxvyDisplay').innerHTML = `Vx: ${Vx.toFixed(2)}<br>Vy: ${Vy.toFixed(2)}`;
+  document.getElementById('VzDisplay').innerHTML = `Vz: ${Vz.toFixed(2)}`;
+  document.getElementById('wheelOutput').innerHTML = `W1: ${W1.toFixed(2)}<br>W2: ${W2.toFixed(2)}<br>W3: ${W3.toFixed(2)}`;
+
+
+  //console.log(`Vx=${Vx}, Vy=${Vy}, Vz=${Vz}`);
+  //console.log(`W1=${W1}, W2=${W2}, W3=${W3}`);
+
+}
+
+
+
+
 </script>
 <script>
   // Robot Animation
