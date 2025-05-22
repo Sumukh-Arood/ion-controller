@@ -5,17 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ION - 1.1 Omni Robot Controller</title>
   <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2c3e50;
+      --text-color: #333;
+      --background-color: #f5f7fa;
+      --border-color: #ccc;
+      --highlight-color: red;
+    }
+
     body {
       font-family: "Segoe UI", sans-serif;
-      background: #f5f7fa;
+      background: var(--background-color);
       margin: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
+
     header {
-      background: linear-gradient(to right, #2c3e50, #3498db);
+      background: linear-gradient(to right, var(--secondary-color), var(--primary-color));
       color: white;
       width: 100%;
       padding: 20px 0;
@@ -23,123 +33,152 @@
       font-size: 2rem;
       font-weight: bold;
     }
-.controller {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 30px;
-  padding: 30px 10px 0;
-}
 
-@media (max-width: 768px) {
-  .controller {
-    flex-direction: column;
-    align-items: center;
-  }
+    .controller-wrapper {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      overflow-x: hidden;
+    }
 
-  .slider-section {
-    width: 90%;
-  }
-
-  .joystick-container canvas {
-    max-width: 100%;
-    height: auto;
-  }
-}
+    .controller {
+      display: flex;
+      justify-content: center;
+      flex-wrap: nowrap;
+      gap: 15px;
+      padding: 30px 10px 0;
+      max-width: 1000px;
+      flex: 1;
+    }
 
     .joystick-container {
       display: flex;
       flex-direction: column;
       align-items: center;
+      flex: 1 1 0;
+      min-width: 160px;
+      max-width: 33.333%;
+      box-sizing: border-box;
     }
+
     .joystick-container label {
       font-weight: 600;
       margin-bottom: 10px;
       font-size: 1.1rem;
+      text-align: center;
     }
+
+    canvas {
+      background: white;
+      border: 2px solid #333;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      max-width: 100%;
+      height: auto;
+    }
+
     .joystick-output, .wheel-output {
       margin-top: 8px;
       font-size: 14px;
       font-family: monospace;
       background: #fff;
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color);
       padding: 6px 12px;
       border-radius: 6px;
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
     }
-    canvas {
-      background: white;
-      border: 2px solid #333;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    #dirJoystick {
-      border-radius: 50%;
-    }
+
     .slider-section {
       display: flex;
       flex-direction: column;
       align-items: center;
       margin-top: 30px;
       gap: 20px;
+      width: 100%;
+      padding: 0 10px;
+      box-sizing: border-box;
     }
+
     .slider-container {
       background: #ffffff;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 600px;
+      box-sizing: border-box;
     }
+
     .slider-container h3 {
       margin-top: 0;
       font-size: 1.2rem;
-      border-bottom: 1px solid #ccc;
+      border-bottom: 1px solid var(--border-color);
       padding-bottom: 6px;
     }
+
     .slider-group {
       display: flex;
       align-items: center;
       margin-bottom: 15px;
       gap: 10px;
     }
+
     .slider-group label {
       flex: 1;
       font-weight: 600;
     }
+
     .slider-group input[type="range"] {
       flex: 2;
-      accent-color: #007bff;
+      accent-color: var(--primary-color);
     }
+
     .slider-value {
       width: 60px;
       text-align: right;
       font-family: monospace;
     }
+
     @media (max-width: 768px) {
-      .controller, .slider-section {
-        flex-direction: column;
-        align-items: center;
+      .controller {
+        gap: 10px;
+      }
+      .joystick-container {
+        min-width: 90px;
+        max-width: 33.33%;
+      }
+      .slider-container {
+        max-width: 100%;
       }
     }
   </style>
 </head>
 <body>
-  <header>ION - 1.1 — Omni Robot Controller — by SumukhArood</header>
+  <header>
+    ION - 1.1 — Omni Robot Controller — by SumukhArood
+  </header>
 
-  <div class="controller">
-    <div class="joystick-container">
-      <label>Direction Control</label>
-      <canvas id="dirJoystick" width="150" height="150"></canvas>
-      <div class="joystick-output" id="vxvyDisplay">Vx: 0.00<br>Vy: 0.00</div>
-    </div>
-    <div class="joystick-container">
-      <label>Navigation Map</label>
-      <canvas id="robotCanvas" width="200" height="200"></canvas>
-    </div>
-    <div class="joystick-container">
-      <label>Rotation Control</label>
-      <canvas id="rotJoystick" width="150" height="50"></canvas>
-      <div class="joystick-output" id="wzDisplay">Wz: 0.00</div>
-      <div class="wheel-output" id="wheelOutput">W1: 0.00<br>W2: 0.00<br>W3: 0.00</div>
+  <div class="controller-wrapper">
+    <div class="controller" role="region" aria-label="Controller">
+      <div class="joystick-container">
+        <label for="dirJoystick">Direction Control</label>
+        <canvas id="dirJoystick" width="150" height="150" aria-label="Direction Joystick"></canvas>
+        <div class="joystick-output" id="vxvyDisplay">Vx: 0.00<br>Vy: 0.00</div>
+      </div>
+
+      <div class="joystick-container">
+        <label for="robotCanvas">Navigation Map</label>
+        <canvas id="robotCanvas" width="200" height="200" aria-label="Navigation Map"></canvas>
+      </div>
+
+      <div class="joystick-container">
+        <label for="rotJoystick">Rotation Control</label>
+        <canvas id="rotJoystick" width="150" height="50" aria-label="Rotation Joystick"></canvas>
+        <div class="joystick-output" id="VzDisplay">Vz: 0.00</div>
+        <div class="wheel-output" id="wheelOutput">W1: 0.00<br>W2: 0.00<br>W3: 0.00</div>
+      </div>
     </div>
   </div>
 
@@ -147,17 +186,17 @@
     <div class="slider-container">
       <h3>Tuning</h3>
       <div class="slider-group">
-        <label>Speed Control</label>
+        <label for="speed">Speed Control</label>
         <input type="range" id="speed" min="100" max="1000" value="550">
         <span id="speedVal" class="slider-value">550</span>
       </div>
       <div class="slider-group">
-        <label>Rotation Gain</label>
+        <label for="rotationGain">Rotation Gain</label>
         <input type="range" id="rotationGain" min="0" max="1" step="0.01" value="0.3">
         <span id="rotationVal" class="slider-value">0.30</span>
       </div>
       <div class="slider-group">
-        <label>Radius R (cm)</label>
+        <label for="radius">Radius R (cm)</label>
         <input type="range" id="radius" min="5" max="20" step="0.1" value="9.0">
         <span id="radiusVal" class="slider-value">9.0</span>
       </div>
@@ -165,13 +204,13 @@
   </div>
 
 <script>
-let Vx = 0, Vy = 0, Wz = 0;
+let Vx = 0, Vy = 0, Vz = 0;
 let maxSpeed = 550;
 let ROTATION_GAIN = 0.3;
 let R = 9.0;
 let W1 = 0, W2 = 0, W3 = 0;
 
-// Direction Joystick
+// --- Direction Joystick ---
 const dirCanvas = document.getElementById('dirJoystick');
 const dirCtx = dirCanvas.getContext('2d');
 const dirCenter = { x: 75, y: 75, radius: 60 };
@@ -188,56 +227,47 @@ function drawDirJoystick() {
   dirCtx.fill();
 }
 
-function handleDirInput(clientX, clientY) {
+function handleDirInput(x, y) {
   const rect = dirCanvas.getBoundingClientRect();
-  const x = clientX - rect.left;
-  const y = clientY - rect.top;
-  let dx = x - dirCenter.x;
-  let dy = y - dirCenter.y;
+  let dx = x - rect.left - dirCenter.x;
+  let dy = y - rect.top - dirCenter.y;
   const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist > dirCenter.radius) {
-    dx *= dirCenter.radius / dist;
-    dy *= dirCenter.radius / dist;
-  }
-  dirStick.x = dirCenter.x + dx;
-  dirStick.y = dirCenter.y + dy;
-  Vx = -dy / dirCenter.radius;
-  Vy = dx / dirCenter.radius;
+  const limit = dist > dirCenter.radius ? dirCenter.radius / dist : 1;
+  dirStick.x = dirCenter.x + dx * limit;
+  dirStick.y = dirCenter.y + dy * limit;
+  Vx = -dy * limit / dirCenter.radius;
+  Vy = dx * limit / dirCenter.radius;
   drawDirJoystick();
   compute();
 }
 
-dirCanvas.addEventListener('mousedown', () => {
-  function move(e) {
-    handleDirInput(e.clientX, e.clientY);
-  }
+dirCanvas.addEventListener('mousedown', e => {
+  function move(ev) { handleDirInput(ev.clientX, ev.clientY); }
   document.addEventListener('mousemove', move);
   document.addEventListener('mouseup', () => {
+    Vx = Vy = 0;
     dirStick = { x: dirCenter.x, y: dirCenter.y };
-    Vx = 0; Vy = 0;
     drawDirJoystick(); compute();
     document.removeEventListener('mousemove', move);
   }, { once: true });
 });
 
-dirCanvas.addEventListener('touchstart', (e) => {
+dirCanvas.addEventListener('touchstart', e => {
   e.preventDefault();
-  const touch = e.touches[0];
   function move(ev) {
     const t = ev.touches[0];
     handleDirInput(t.clientX, t.clientY);
   }
   document.addEventListener('touchmove', move);
   document.addEventListener('touchend', () => {
+    Vx = Vy = 0;
     dirStick = { x: dirCenter.x, y: dirCenter.y };
-    Vx = 0; Vy = 0;
     drawDirJoystick(); compute();
     document.removeEventListener('touchmove', move);
   }, { once: true });
 }, { passive: false });
 
-
-// Rotation Joystick
+// --- Rotation Joystick ---
 const rotCanvas = document.getElementById('rotJoystick');
 const rotCtx = rotCanvas.getContext('2d');
 let rotX = 75;
@@ -251,86 +281,76 @@ function drawRotJoystick() {
   rotCtx.fill();
 }
 
-// Shared function for rotation joystick input
-function handleRotInput(clientX) {
+function handleRotInput(x) {
   const rect = rotCanvas.getBoundingClientRect();
-  let x = clientX - rect.left;
-  x = Math.max(15, Math.min(x, 135));
-  rotX = x;
-  Wz = (rotX - 75) / 60;
-  drawRotJoystick();
-  compute();
+  let dx = x - rect.left;
+  rotX = Math.max(15, Math.min(dx, 135));
+  Vz = (rotX - 75) / 60;
+  drawRotJoystick(); compute();
 }
 
-// Mouse input
-rotCanvas.addEventListener('mousedown', () => {
-  function move(evt) {
-    handleRotInput(evt.clientX);
-  }
+rotCanvas.addEventListener('mousedown', e => {
+  function move(ev) { handleRotInput(ev.clientX); }
   document.addEventListener('mousemove', move);
   document.addEventListener('mouseup', () => {
+    Vz = 0;
     rotX = 75;
-    Wz = 0;
-    drawRotJoystick();
-    compute();
+    drawRotJoystick(); compute();
     document.removeEventListener('mousemove', move);
   }, { once: true });
 });
 
-// Touch input (for iPad, phones)
-rotCanvas.addEventListener('touchstart', (e) => {
+rotCanvas.addEventListener('touchstart', e => {
   e.preventDefault();
-  const touch = e.touches[0];
   function move(ev) {
     const t = ev.touches[0];
     handleRotInput(t.clientX);
   }
   document.addEventListener('touchmove', move);
   document.addEventListener('touchend', () => {
+    Vz = 0;
     rotX = 75;
-    Wz = 0;
-    drawRotJoystick();
-    compute();
+    drawRotJoystick(); compute();
     document.removeEventListener('touchmove', move);
   }, { once: true });
 }, { passive: false });
 
-
-// Sliders
-document.getElementById('speed').addEventListener('input', (e) => {
+// --- Sliders ---
+document.getElementById('speed').addEventListener('input', e => {
   maxSpeed = parseInt(e.target.value);
   document.getElementById('speedVal').textContent = maxSpeed;
   compute();
 });
-
-document.getElementById('rotationGain').addEventListener('input', (e) => {
+document.getElementById('rotationGain').addEventListener('input', e => {
   ROTATION_GAIN = parseFloat(e.target.value);
   document.getElementById('rotationVal').textContent = ROTATION_GAIN.toFixed(2);
   compute();
 });
-
-document.getElementById('radius').addEventListener('input', (e) => {
+document.getElementById('radius').addEventListener('input', e => {
   R = parseFloat(e.target.value);
   document.getElementById('radiusVal').textContent = R.toFixed(1);
   compute();
 });
 
-// Telemetry & Wheel Calculations
+// --- Telemetry ---
 function compute() {
-  W1 = (-Vx + ROTATION_GAIN * R * Wz) * maxSpeed;
-  W2 = (0.5 * Vx + 0.866 * Vy + ROTATION_GAIN * R * Wz) * maxSpeed;
-  W3 = (0.5 * Vx - 0.866 * Vy + ROTATION_GAIN * R * Wz) * maxSpeed;
+  W1 = (-Vx + ROTATION_GAIN * R * Vz) * maxSpeed;
+  W2 = (0.5 * Vx + 0.866 * Vy + ROTATION_GAIN * R * Vz) * maxSpeed;
+  W3 = (0.5 * Vx - 0.866 * Vy + ROTATION_GAIN * R * Vz) * maxSpeed;
 
   W1 = Math.max(-500, Math.min(500, W1));
   W2 = Math.max(-500, Math.min(500, W2));
   W3 = Math.max(-500, Math.min(500, W3));
 
   document.getElementById('vxvyDisplay').innerHTML = `Vx: ${Vx.toFixed(2)}<br>Vy: ${Vy.toFixed(2)}`;
-  document.getElementById('wzDisplay').innerHTML = `Wz: ${Wz.toFixed(2)}`;
-  document.getElementById('wheelOutput').innerHTML = `W1: ${W1.toFixed(2)}<br>W2: ${W2.toFixed(2)}<br>W3: ${W3.toFixed(2)}`;
+  document.getElementById('VzDisplay').innerHTML = `Vz: ${Vz.toFixed(2)}`;
+  document.getElementById('wheelOutput').innerHTML =
+    `W1: ${W1.toFixed(2)}<br>W2: ${W2.toFixed(2)}<br>W3: ${W3.toFixed(2)}`;
 }
+</script>
 
-// Robot Canvas + Wheel Orientation
+<script>
+// --- Robot Drawing ---
 const robotCanvas = document.getElementById('robotCanvas');
 const ctx = robotCanvas.getContext('2d');
 let pos = { x: 0, y: 0 };
@@ -354,6 +374,32 @@ function drawGrid(offsetX, offsetY) {
   }
 }
 
+// Replacement rounded rectangle function
+function roundedRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+// Draw a wheel with rounded rectangle
+function drawWheel(x, y, angleRad) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angleRad);
+  ctx.fillStyle = "#000";
+  roundedRect(ctx, -10, -3, 20, 6, 3);
+  ctx.fill();
+  ctx.restore();
+}
+
 function drawHexagon(cx, cy, radius, angleRad) {
   ctx.save();
   ctx.translate(cx, cy);
@@ -375,33 +421,13 @@ function drawHexagon(cx, cy, radius, angleRad) {
   ctx.fillStyle = "#eee";
   ctx.fill();
 
-  // Draw wheels at top, bottom-left, and bottom-right like your image
-const wheelPos = [
-  { x: 0, y: -(radius) },                   // Top
-  { x: -(radius * Math.cos(Math.PI / 6)), y: radius * Math.sin(Math.PI / 6) },  // Bottom-left
-  { x: +(radius * Math.cos(Math.PI / 6)), y: radius * Math.sin(Math.PI / 6) }   // Bottom-right
-];
+  // Wheels
+  const rOffset = radius + 2;
+  drawWheel(0, -rOffset, 0); // Top wheel (0°)
+  drawWheel(rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), -Math.PI / 3); // Left wheel
+  drawWheel(-rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), Math.PI / 3); // Right wheel
 
-function drawWheel(x, y, angleRad) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angleRad);
-  ctx.fillStyle = "#000";
-  ctx.beginPath();
-  const w = 20, h = 8;
-  ctx.roundRect(-w / 2, -h / 2, w, h, 2);
-  ctx.fill();
-  ctx.restore();
-}
-
-const rOffset = radius + 3;
-drawWheel(0, -rOffset, 0);  // Top (0°)
-drawWheel(rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), -Math.PI / 3); // Left (-60°)
-drawWheel(-rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), +Math.PI / 3); // Right (+60°)
-
-
-
-  // Front red indicator
+  // Front red direction arrow
   ctx.save();
   ctx.rotate(Math.PI / 2);
   ctx.beginPath();
@@ -412,6 +438,7 @@ drawWheel(-rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), +Ma
   ctx.fillStyle = "red";
   ctx.fill();
   ctx.restore();
+
   ctx.restore();
 }
 
@@ -421,7 +448,7 @@ function updateAnimation() {
 
   pos.x += dx * 2;
   pos.y -= dy * 2;
-  angle += Wz * 0.05;
+  angle += Vz * 0.05;
 
   ctx.clearRect(0, 0, 200, 200);
   drawGrid(-pos.x + 100, -pos.y + 100);
@@ -429,11 +456,14 @@ function updateAnimation() {
   requestAnimationFrame(updateAnimation);
 }
 
+// Initialize at load
 drawDirJoystick();
 drawRotJoystick();
 compute();
 updateAnimation();
+
 </script>
 
 </body>
 </html>
+
