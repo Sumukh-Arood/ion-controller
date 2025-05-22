@@ -388,9 +388,9 @@
 
   // Compute Wheel Speeds
   function compute() {
-  W1 = (-Vy + R * ROT_GAIN * Wz) * maxSpeed;
-  W2 = ( 0.866 * Vx + 0.5 * Vy + R * ROT_GAIN * Wz) * maxSpeed;
-  W3 = (-0.866 * Vx + 0.5 * Vy + R * ROT_GAIN * Wz) * maxSpeed;
+    W1 = (-Vx + ROTATION_GAIN * R * Vz) * maxSpeed;
+    W2 = (0.5 * Vx + 0.866 * Vy + ROTATION_GAIN * R * Vz) * maxSpeed;
+    W3 = (0.5 * Vx - 0.866 * Vy + ROTATION_GAIN * R * Vz) * maxSpeed;
 
     W1 = Math.max(-500, Math.min(500, W1));
     W2 = Math.max(-500, Math.min(500, W2));
@@ -458,7 +458,7 @@
     ctx.fillStyle = "#eee";
     ctx.fill();
 
-    const rOffset = radius + 3;
+    const rOffset = radius + 6;
     drawWheel(0, -rOffset, 0);
     drawWheel(rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), -Math.PI / 3);
     drawWheel(-rOffset * Math.cos(Math.PI / 6), rOffset * Math.sin(Math.PI / 6), Math.PI / 3);
