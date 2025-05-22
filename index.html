@@ -105,7 +105,7 @@
   </style>
 </head>
 <body>
-  <header>ION - 1.1 — Omni Robot Controller SUUUU</header>
+  <header>ION - 1.1 — Omni Robot Controller — SumukhArood</header>
 
   <div class="controller">
     <div class="joystick-container">
@@ -218,6 +218,7 @@ dirCanvas.addEventListener('touchstart', (e) => {
   }, { once: true });
 }, { passive: false });
 
+
 // Rotation Joystick
 const rotCanvas = document.getElementById('rotJoystick');
 const rotCtx = rotCanvas.getContext('2d');
@@ -232,15 +233,21 @@ function drawRotJoystick() {
   rotCtx.fill();
 }
 
+// Shared function for rotation joystick input
+function handleRotInput(clientX) {
+  const rect = rotCanvas.getBoundingClientRect();
+  let x = clientX - rect.left;
+  x = Math.max(15, Math.min(x, 135));
+  rotX = x;
+  Wz = (rotX - 75) / 60;
+  drawRotJoystick();
+  compute();
+}
+
+// Mouse input
 rotCanvas.addEventListener('mousedown', () => {
   function move(evt) {
-    const rect = rotCanvas.getBoundingClientRect();
-    let x = evt.clientX - rect.left;
-    x = Math.max(15, Math.min(x, 135));
-    rotX = x;
-    Wz = (rotX - 75) / 60;
-    drawRotJoystick();
-    compute();
+    handleRotInput(evt.clientX);
   }
   document.addEventListener('mousemove', move);
   document.addEventListener('mouseup', () => {
@@ -251,6 +258,25 @@ rotCanvas.addEventListener('mousedown', () => {
     document.removeEventListener('mousemove', move);
   }, { once: true });
 });
+
+// Touch input (for iPad, phones)
+rotCanvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  function move(ev) {
+    const t = ev.touches[0];
+    handleRotInput(t.clientX);
+  }
+  document.addEventListener('touchmove', move);
+  document.addEventListener('touchend', () => {
+    rotX = 75;
+    Wz = 0;
+    drawRotJoystick();
+    compute();
+    document.removeEventListener('touchmove', move);
+  }, { once: true });
+}, { passive: false });
+
 
 // Sliders
 document.getElementById('speed').addEventListener('input', (e) => {
