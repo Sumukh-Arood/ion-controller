@@ -23,13 +23,31 @@
       font-size: 2rem;
       font-weight: bold;
     }
-    .controller {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 40px;
-      padding: 30px 10px 0;
-    }
+.controller {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 30px;
+  padding: 30px 10px 0;
+}
+
+@media (max-width: 768px) {
+  .controller {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .slider-section {
+    width: 90%;
+  }
+
+  .joystick-container canvas {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
     .joystick-container {
       display: flex;
       flex-direction: column;
@@ -105,7 +123,7 @@
   </style>
 </head>
 <body>
-  <header>ION - 1.1 — Omni Robot Controller — SumukhArood</header>
+  <header>ION - 1.1 — Omni Robot Controller — by SumukhArood</header>
 
   <div class="controller">
     <div class="joystick-container">
